@@ -8,154 +8,105 @@
 
   <style>
     :root{
-      --accent1: #4f46e5;
-      --accent2: #9333ea;
+      --accent1:#4f46e5;
+      --accent2:#9333ea;
       --card-bg: rgba(255,255,255,0.98);
-      --muted: #6b7280;
+      --muted:#6b7280;
     }
-
     html,body { height:100%; }
     body {
       margin: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
       background: linear-gradient(135deg, var(--accent1), var(--accent2));
       color: #0f172a;
     }
-
-    .main {
-      flex: 1 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 28px;
-    }
-
+    .main { flex:1 0 auto; display:flex; align-items:center; justify-content:center; padding:28px; }
     .card-outer {
-      width: 100%;
-      max-width: 1100px;
-      background: var(--card-bg);
-      border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.22);
-      padding: 22px;
-      position: relative;
+      width:100%; max-width:1100px;
+      background:var(--card-bg); border-radius:16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.22); padding:22px; position:relative;
     }
+    h4.title { color:var(--accent1); font-weight:800; margin-bottom:6px; font-size:1.75rem; }
+    .subtitle { color:var(--muted); margin-bottom:14px; }
+    .form-row { margin-bottom:12px; }
 
-    h4.title {
-      color: var(--accent1);
-      font-weight: 800;
-      margin-bottom: 6px;
-      font-size: 1.75rem;
-    }
-    .subtitle { color: var(--muted); margin-bottom: 14px; }
-
-    .form-row { margin-bottom: 12px; }
-
-    .group-head {
-      margin-top: 18px;
-      margin-bottom: 8px;
-      font-weight: 800;
-      color: #0f172a;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .group-head small { color: var(--muted); font-weight:600; }
+    .group-head { margin-top:18px; margin-bottom:8px; font-weight:800; display:flex; gap:12px; align-items:center; }
+    .group-head small { color:var(--muted); font-weight:600; }
 
     .subjects-grid {
-      display: grid;
+      display:grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-top: 8px;
+      gap:12px;
+      margin-top:8px;
     }
 
     .subject-item {
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-      font-weight: 700;
-      color: #0f172a;
-      overflow: visible;
+      padding:12px 14px;
+      border-radius:12px;
+      background:#fff;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+      font-weight:700;
+      color:#0f172a;
+      overflow:visible;
     }
 
     .subject-name {
-      /* allow full wrapping */
       white-space: normal !important;
       word-break: break-word;
-      overflow: visible;
-      margin-right: 12px;
-      font-size: 0.95rem;
-      line-height: 1.2;
-      flex: 1 1 auto;
-      text-align: left;
+      overflow:visible;
+      margin-right:12px;
+      font-size:0.95rem;
+      line-height:1.2;
+      flex:1 1 auto;
+      text-align:left;
     }
 
     .subject-grade {
-      flex-shrink: 0;
-      min-width: 56px;
-      padding: 6px 10px;
-      text-align: center;
-      border-radius: 8px;
-      font-weight: 800;
-      color: #fff;
-      margin-left: 8px;
+      flex-shrink:0;
+      min-width:56px;
+      padding:6px 10px;
+      text-align:center;
+      border-radius:8px;
+      font-weight:800;
+      color:#fff;
+      margin-left:8px;
     }
 
-    .g-A { background: #16a34a; }     /* A family */
-    .g-B { background: #2563eb; }     /* B family */
-    .g-C { background: #f59e0b; color: #111; } /* C/D */
-    .g-F { background: #dc2626; }     /* Fail */
+    .g-A { background:#16a34a; }  /* A family */
+    .g-B { background:#2563eb; }  /* B family */
+    .g-C { background:#f59e0b; color:#111; } /* C/D */
+    .g-F { background:#dc2626; }  /* Fail */
 
     .summary-row {
-      display:flex;
-      gap:16px;
-      align-items:center;
-      margin-top:18px;
-      background: #f8fafc;
-      padding: 14px;
-      border-radius: 10px;
-      flex-wrap: wrap;
+      display:flex; gap:16px; align-items:center; margin-top:18px;
+      background:#f8fafc; padding:14px; border-radius:10px; flex-wrap:wrap;
     }
     .kpi { display:flex; flex-direction:column; gap:6px; }
-    .kpi-title { font-size: 0.9rem; color: var(--muted); }
-    .kpi-value { font-size: 1.6rem; font-weight: 800; color: #0f172a; }
+    .kpi-title { font-size:0.9rem; color:var(--muted); }
+    .kpi-value { font-size:1.6rem; font-weight:800; color:#0f172a; }
 
     .badge-pass { background:#16a34a; color:white; padding:6px 10px; border-radius:8px; font-weight:700; }
     .badge-fail { background:#dc2626; color:white; padding:6px 10px; border-radius:8px; font-weight:700; }
 
-    .msgbox { margin-top: 12px; }
+    .msgbox { margin-top:12px; }
 
-    .developed-by {
-      margin-top: 16px;
-      text-align: center;
-      font-size: 0.95rem;
-      color: #374151;
-      font-weight: 700;
-    }
+    .developed-by { margin-top:16px; text-align:center; font-size:0.95rem; color:#374151; font-weight:700; }
 
     .disclaimer {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      color: #374151;
-      background: rgba(249,250,251,0.7);
-      border-left: 4px solid #eab308;
-      padding: 10px 12px;
-      border-radius: 8px;
-    }
-
-    footer.site-footer {
-      display:none; /* keep page tidy; Developed by moved above disclaimer */
+      margin-top:10px; font-size:0.95rem; color:#374151;
+      background: rgba(249,250,251,0.7); border-left:4px solid #eab308;
+      padding:10px 12px; border-radius:8px;
     }
 
     @media (max-width:600px){
-      .kpi .kpi-value { font-size: 1.2rem; }
-      .subject-item { padding: 10px; }
+      .kpi .kpi-value { font-size:1.2rem; }
+      .subject-item { padding:10px; }
     }
   </style>
 </head>
@@ -168,7 +119,7 @@
       <div class="row form-row g-2 align-items-end">
         <div class="col-md-9 col-12">
           <label class="form-label">Registration Number</label>
-          <input id="reg" class="form-control" placeholder="e.g. piet23ad005" title="Type registration number; case doesn't matter. Press Enter to search." autofocus>
+          <input id="reg" class="form-control" placeholder="e.g. PIET23AD005" title="Type registration number; case doesn't matter. Press Enter to search." autofocus>
           <div class="small text-muted mt-1">Tip: type in lowercase or uppercase — we convert automatically.</div>
         </div>
         <div class="col-md-3 col-12">
@@ -179,7 +130,7 @@
       <div id="msg" class="msgbox" aria-live="polite"></div>
       <div id="results" class="mt-3" role="region" aria-live="polite"></div>
 
-      <!-- Developed by above disclaimer as requested -->
+      <!-- Developed by above disclaimer -->
       <div id="developed" class="developed-by" aria-hidden="false">
         Developed by <strong>Department of AI &amp; DS, PIET Jaipur</strong>
       </div>
@@ -191,7 +142,7 @@
   </div>
 
 <script>
-/* UI logic — works with /api/result?reg=... */
+/* UI logic — expects backend to map codes -> full names */
 const btn = document.getElementById('btn');
 const regInput = document.getElementById('reg');
 const results = document.getElementById('results');
@@ -245,7 +196,7 @@ async function renderResult(regRaw){
 
     const r = rows[0];
 
-    // show branch note if present
+    // branch note
     if(r["Branch"]){
       msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${escapeHtml(r["Branch"])}</strong>.</div>`;
     }
@@ -254,11 +205,11 @@ async function renderResult(regRaw){
     const regNo = safeText(r["Reg. No"] || reg);
     const uniroll = safeText(r["Uni-Roll No"] || '');
 
-    // prepare subject keys (ignore core + Branch + skip numeric suffix columns)
+    // skip list (do not render these keys)
     const skip = new Set(["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","Branch"]);
     const subjectKeys = Object.keys(r)
       .filter(k => !skip.has(k))
-      .filter(k => !/\.\d+$/.test(k));   // skip keys that end with .1, .2 etc.
+      .filter(k => !/\.\d+$/.test(k));   // skip duplicate numeric-suffix columns
 
     const subjects = subjectKeys.map(k => ({ key: k, name: String(k).split(" (")[0], grade: r[k] }));
 
@@ -268,6 +219,7 @@ async function renderResult(regRaw){
     theory.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
     labs.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
 
+    // Build HTML
     let html = `<h3 style="margin-top:8px; margin-bottom:6px; font-weight:800;">${escapeHtml(studentName)} <small style="color:${escapeHtml('#6b7280')}; font-weight:600;">(${escapeHtml(regNo)})</small></h3>`;
     html += `<div style="color:${escapeHtml('#6b7280')}; margin-bottom:10px;">Uni-Roll: ${escapeHtml(uniroll)}</div>`;
 
@@ -291,7 +243,7 @@ async function renderResult(regRaw){
       html += `</div>`;
     }
 
-    // summary: SGPA two decimals, Total Back, Result
+    // summary: SGPA, Total Back, Result badge
     const sgpaStr = toTwoDecimals(r["SGPA"]);
     const totalBack = escapeHtml(r["Total Back"] || '');
     const resultStatus = String(r["Result"] || '');
@@ -312,7 +264,6 @@ async function renderResult(regRaw){
 btn.addEventListener('click', ()=> renderResult(regInput.value));
 regInput.addEventListener('keydown', (ev)=> {
   if(ev.key === 'Enter') {
-    // ensure uppercase conversion visually for clarity, then search
     regInput.value = (regInput.value || '').toUpperCase();
     renderResult(regInput.value);
   }
