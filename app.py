@@ -5,6 +5,38 @@ app = Flask(__name__, template_folder='templates')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
+def find_data_file(data_dir, branch):
+    """Try multiple variants of branch string to locate JSON file."""
+    b = branch.strip()
+    candidates = [
+        b,
+        b.replace(' ', ''),
+        b.replace('&', 'and'),
+        b.replace('&', ''),
+        b.replace('(', '').replace(')', ''),
+        b.upper(),
+        b.lower(),
+        b.replace(' ', '-'),
+        b.replace(' ', '_')
+    ]
+    seen = []
+    for c in candidates:
+        if c and c not in seen:
+            seen.append(c)
+    # direct matches
+    for c in seen:
+        path = os.path.join(data_dir, f"{c}.json")
+        if os.path.exists(path):
+            return path
+    # fallback: fuzzy contains match
+    needle = ''.join(ch for ch in b.lower() if ch.isalnum())
+    for fname in os.listdir(data_dir):
+        if fname.lower().endswith('.json'):
+            key = ''.join(ch for ch in os.path.splitext(fname)[0].lower() if ch.isalnum())
+            if needle and needle in key:
+                return os.path.join(data_dir, fname)
+    return None
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -15,21 +47,25 @@ def result():
     branch = request.args.get("branch", "").strip()
     if not reg or not branch:
         return jsonify({"error": "Registration number and branch are required"}), 400
-    safe_branch = branch.replace('/', '').replace('..', '')
-    data_file = os.path.join(DATA_DIR, f"{safe_branch}.json")
-    if not os.path.exists(data_file):
-        return jsonify({"error":"Incorrect entries or branch selection. Please try again."}), 400
+
+    data_file = find_data_file(DATA_DIR, branch)
+    if not data_file:
+        return jsonify({"error": "Incorrect entries or branch selection. Please try again."}), 400
+
     try:
         with open(data_file, "r", encoding="utf-8") as fh:
             rows = json.load(fh)
     except Exception as e:
         return jsonify({"error": "Failed to read data file", "detail": str(e)}), 500
+
     reg_norm = reg.lower()
     matches = []
     for r in rows:
+        # normalize row values to strings
         r = {str(k): (v if v is not None else "") for k, v in r.items()}
         if any(isinstance(v, str) and v.strip().lower() == reg_norm for v in r.values()):
             matches.append(r)
+
     return jsonify({"result": matches})
 
 if __name__ == '__main__':
