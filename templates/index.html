@@ -8,13 +8,22 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 def find_data_file(data_dir, branch):
     """Try multiple variants of branch string to locate JSON file."""
     b = branch.strip()
-    candidates = [b, b.replace(' ', ''), b.replace('&','and'), b.replace('&',''),
-                  b.replace('(', '').replace(')', ''), b.upper(), b.lower(),
-                  b.replace(' ', '-'), b.replace(' ', '_')]
+    candidates = [
+        b,
+        b.replace(' ', ''),
+        b.replace('&', 'and'),
+        b.replace('&', ''),
+        b.replace('(', '').replace(')', ''),
+        b.upper(),
+        b.lower(),
+        b.replace(' ', '-'),
+        b.replace(' ', '_')
+    ]
     seen = []
     for c in candidates:
         if c and c not in seen:
             seen.append(c)
+    # direct matches
     for c in seen:
         path = os.path.join(data_dir, f"{c}.json")
         if os.path.exists(path):
@@ -41,7 +50,7 @@ def result():
 
     data_file = find_data_file(DATA_DIR, branch)
     if not data_file:
-        return jsonify({"error":"Incorrect entries or branch selection. Please try again."}), 400
+        return jsonify({"error": "Incorrect entries or branch selection. Please try again."}), 400
 
     try:
         with open(data_file, "r", encoding="utf-8") as fh:
@@ -52,6 +61,7 @@ def result():
     reg_norm = reg.lower()
     matches = []
     for r in rows:
+        # normalize row values to strings
         r = {str(k): (v if v is not None else "") for k, v in r.items()}
         if any(isinstance(v, str) and v.strip().lower() == reg_norm for v in r.values()):
             matches.append(r)
