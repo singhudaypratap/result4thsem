@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, jsonify, request, render_template
 import os, json, re
 
 app = Flask(__name__, template_folder='templates')
@@ -121,9 +121,11 @@ def find_reg_values_in_row(row):
         if not isinstance(k, str):
             continue
         kl = k.strip().lower()
+        # keys likely indicating reg number
         if any(s in kl for s in ("reg", "registration", "regno", "reg.no", "regno.")):
             if isinstance(v, str) and v.strip():
                 regs.append(v.strip())
+        # also any PIET token embedded in values
         if isinstance(v, str) and "PIET" in v.upper():
             regs.append(v.strip())
     return regs
@@ -131,13 +133,15 @@ def find_reg_values_in_row(row):
 def clean_row(row, branch):
     """
     Keep only limited columns and enrich subject codes with names.
-    Returns a dict with keys:
-     - Reg. No, Name, Uni-Roll No, Col Roll No, [Subject Name (Code)]: grade, Total Back, Result, SGPA
+    Returns a dict with normalized core fields and subject keys like:
+      "Database Management System (4CS4-05)": "A"
+    Also adds 'Branch' key indicating the JSON file where the record was found.
     """
     mapping = SUBJECT_MAPS.get(branch, {})
     cleaned = {}
     r = {str(k).strip(): (v if v is not None else '') for k, v in row.items()}
 
+    # Normalize core fields with some common variations
     core_targets = {
         "Reg. No": ["reg. no", "reg", "registration", "regno", "registration no"],
         "Name": ["name", "student name"],
@@ -158,17 +162,21 @@ def clean_row(row, branch):
             if dest in cleaned:
                 break
 
-    # subjects: avoid numeric duplicate columns (end with .1, .2 etc)
+    # Subjects: avoid numeric duplicate columns (end with .1, .2 etc)
     for k, v in r.items():
-        if re.search(r'\.\d+$', k):
+        if re.search(r'\.\d+$', k):  # skip duplicate numeric columns
             continue
+        # map known code to subject name
         if k in mapping:
             name = mapping[k]
             cleaned[f"{name} ({k})"] = v
         else:
+            # heuristic: if key contains letters and digits, treat as subject-like code or name
             if re.search(r'[A-Za-z]', k) and re.search(r'\d', k):
                 cleaned[k] = v
 
+    # finally annotate branch in a friendly key
+    cleaned["Branch"] = branch
     return cleaned
 
 # ------------------ Routes ------------------
@@ -177,54 +185,55 @@ def clean_row(row, branch):
 def home():
     return render_template("index.html")
 
+def load_rows_for_branch(b):
+    p = os.path.join(DATA_DIR, f"{b}.json")
+    if not os.path.exists(p):
+        return []
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            obj = json.load(fh)
+            if isinstance(obj, list):
+                return obj
+            return []
+    except Exception:
+        return []
+
 @app.route("/api/result")
 def result():
     reg = request.args.get("reg", "").strip()
-    branch = request.args.get("branch", "").strip()  # optional now
+    branch_hint = request.args.get("branch", "").strip()  # optional hint, ignored if not valid
 
     if not reg:
         return jsonify({"error": "Registration number is required"}), 400
 
-    # prepare branch order: if user provided valid branch prefer it first; otherwise check all
-    if branch and branch in ALLOWED_BRANCHES:
-        checked_branches = [branch] + [b for b in ALLOWED_BRANCHES if b != branch]
-    else:
-        checked_branches = ALLOWED_BRANCHES[:]  # check all in defined order
-
-    # loader
-    def load_rows_for_branch(b):
-        p = os.path.join(DATA_DIR, f"{b}.json")
-        if not os.path.exists(p):
-            return []
-        try:
-            with open(p, "r", encoding="utf-8") as fh:
-                obj = json.load(fh)
-                if isinstance(obj, list):
-                    return obj
-                return []
-        except Exception:
-            return []
-
+    # Normalize for comparison
     reg_norm = reg.strip().lower()
-    matches = []
 
-    for b in checked_branches:
+    # Determine branch search order
+    if branch_hint and branch_hint in ALLOWED_BRANCHES:
+        checked = [branch_hint] + [b for b in ALLOWED_BRANCHES if b != branch_hint]
+    else:
+        checked = ALLOWED_BRANCHES[:]
+
+    matches = []
+    for b in checked:
         rows = load_rows_for_branch(b)
         for raw in rows:
             regs_in_row = find_reg_values_in_row(raw)
             regs_in_row_norm = [s.strip().lower() for s in regs_in_row if isinstance(s, str)]
             matched = False
+            # direct equality or prefix match (flexible)
             for cand in regs_in_row_norm:
                 if cand == reg_norm or cand.startswith(reg_norm) or reg_norm.startswith(cand):
                     cleaned = clean_row(raw, b)
-                    cleaned["__branch__"] = b
                     matches.append(cleaned)
                     matched = True
                     break
             if matched:
+                # continue scanning the same branch to find duplicates if any
                 continue
         if matches:
-            # stop after first branch that contains the reg
+            # break after first branch that contains the reg (to prefer correct branch order)
             break
 
     return jsonify({"result": matches})
@@ -237,5 +246,5 @@ def branches():
         info[b] = {"exists": os.path.exists(path)}
     return jsonify(info)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
