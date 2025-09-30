@@ -26,6 +26,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 AI_DS_SUBJECTS = {
     "4AID2-01": "Discrete Mathematics Structure",
     "4AID1- 03": "Managerial Economics and Financial Accounting",
+    "4AID1-03": "Managerial Economics and Financial Accounting",
     "4AID1-02": "Technical Communication",
     "4AID3-04": "Microprocessor & Interfaces",
     "4AID4-05": "Database Management System",
