@@ -121,11 +121,9 @@ def find_reg_values_in_row(row):
         if not isinstance(k, str):
             continue
         kl = k.strip().lower()
-        # keys that look like registration fields
         if any(s in kl for s in ("reg", "registration", "regno", "reg.no", "regno.")):
             if isinstance(v, str) and v.strip():
                 regs.append(v.strip())
-        # also any PIET-like token in values
         if isinstance(v, str) and "PIET" in v.upper():
             regs.append(v.strip())
     return regs
@@ -140,7 +138,6 @@ def clean_row(row, branch):
     cleaned = {}
     r = {str(k).strip(): (v if v is not None else '') for k, v in row.items()}
 
-    # core fields (normalize possibilities)
     core_targets = {
         "Reg. No": ["reg. no", "reg", "registration", "regno", "registration no"],
         "Name": ["name", "student name"],
@@ -163,15 +160,12 @@ def clean_row(row, branch):
 
     # subjects: avoid numeric duplicate columns (end with .1, .2 etc)
     for k, v in r.items():
-        if re.search(r'\.\d+$', k):  # skip duplicate numeric columns
+        if re.search(r'\.\d+$', k):
             continue
-        # if key is an exact code in mapping, use mapping
         if k in mapping:
             name = mapping[k]
             cleaned[f"{name} ({k})"] = v
         else:
-            # some keys might already be full names or codes like "4CS2-01"
-            # consider keys that look subject-like: contain letters+digits or common code tokens
             if re.search(r'[A-Za-z]', k) and re.search(r'\d', k):
                 cleaned[k] = v
 
@@ -186,14 +180,18 @@ def home():
 @app.route("/api/result")
 def result():
     reg = request.args.get("reg", "").strip()
-    branch = request.args.get("branch", "").strip()
+    branch = request.args.get("branch", "").strip()  # optional now
 
-    if not reg or not branch:
-        return jsonify({"error": "Registration number and branch are required"}), 400
-    if branch not in ALLOWED_BRANCHES:
-        return jsonify({"error": "Incorrect entries or branch selection. Please try again."}), 400
+    if not reg:
+        return jsonify({"error": "Registration number is required"}), 400
 
-    # load helper
+    # prepare branch order: if user provided valid branch prefer it first; otherwise check all
+    if branch and branch in ALLOWED_BRANCHES:
+        checked_branches = [branch] + [b for b in ALLOWED_BRANCHES if b != branch]
+    else:
+        checked_branches = ALLOWED_BRANCHES[:]  # check all in defined order
+
+    # loader
     def load_rows_for_branch(b):
         p = os.path.join(DATA_DIR, f"{b}.json")
         if not os.path.exists(p):
@@ -209,38 +207,30 @@ def result():
 
     reg_norm = reg.strip().lower()
     matches = []
-    # order: try chosen branch first, then all others
-    checked_branches = [branch] + [b for b in ALLOWED_BRANCHES if b != branch]
 
     for b in checked_branches:
         rows = load_rows_for_branch(b)
         for raw in rows:
-            # get possible reg-like values from raw row
             regs_in_row = find_reg_values_in_row(raw)
             regs_in_row_norm = [s.strip().lower() for s in regs_in_row if isinstance(s, str)]
-            # direct match or prefix match (to allow short/long forms)
             matched = False
             for cand in regs_in_row_norm:
                 if cand == reg_norm or cand.startswith(reg_norm) or reg_norm.startswith(cand):
                     cleaned = clean_row(raw, b)
-                    # annotate real branch where record was found
                     cleaned["__branch__"] = b
                     matches.append(cleaned)
                     matched = True
                     break
             if matched:
-                # if found in this branch, we continue scanning this branch to collect duplicates (rare)
                 continue
         if matches:
-            # if found in chosen branch or in some other branch, break after first branch that contains the reg
+            # stop after first branch that contains the reg
             break
 
     return jsonify({"result": matches})
 
-# ------------------ optional: small health endpoint ------------------
 @app.route("/api/branches")
 def branches():
-    """Return allowed branches and whether their JSON exists (useful for frontend to fetch samples)"""
     info = {}
     for b in ALLOWED_BRANCHES:
         path = os.path.join(DATA_DIR, f"{b}.json")
