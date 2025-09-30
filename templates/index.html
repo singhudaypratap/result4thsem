@@ -11,7 +11,6 @@
       --accent2:#9333ea;
       --card-bg: rgba(255,255,255,0.98);
       --muted:#6b7280;
-      --pill-gap:10px;
     }
     body {
       background: linear-gradient(135deg, var(--accent1), var(--accent2));
@@ -34,20 +33,33 @@
     h4 {
       font-weight: 800;
       color: var(--accent1);
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       letter-spacing: -0.5px;
     }
     .subtitle {
       color: var(--muted);
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
+    .hint { font-size:0.9rem; color:var(--muted); margin-top:6px; }
 
-    /* Subjects grid */
+    /* Group headings */
+    .group-head {
+      margin-top:18px;
+      margin-bottom:8px;
+      font-weight:700;
+      color:#111827;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .group-head small { color:var(--muted); font-weight:600; }
+
+    /* Subjects grid (reused) */
     .subjects-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 12px;
-      margin-top: 12px;
+      margin-top: 6px;
     }
     .subject-item {
       display:flex;
@@ -64,15 +76,16 @@
     }
     .subject-name { flex:1; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; font-size: 0.95rem; }
     .subject-grade {
-      margin-left: 12px; min-width:64px; text-align:center; border-radius:10px; padding:6px 10px; font-weight:800;
+      margin-left: 12px; min-width:72px; text-align:center; border-radius:10px; padding:6px 10px; font-weight:800;
       box-shadow: 0 3px 6px rgba(0,0,0,0.12);
       color:#fff;
     }
     /* grade colors */
-    .g-A { background:#16a34a; }    /* A, A+, A++ */
+    .g-A { background:#16a34a; }    /* A family */
     .g-B { background:#2563eb; }    /* B family */
     .g-C { background:#f59e0b; color:#111 } /* C / D */
     .g-F { background:#dc2626; }    /* Fail */
+
     /* summary */
     .summary-row {
       display:flex;
@@ -92,15 +105,7 @@
     .badge-pass { background:#16a34a; color:#fff; padding:6px 10px; border-radius:8px; font-weight:800; }
     .badge-fail { background:#dc2626; color:#fff; padding:6px 10px; border-radius:8px; font-weight:800; }
 
-    /* responsive tweaks */
-    @media (max-width:600px){
-      .kpi .kpi-value { font-size:1.2rem; }
-      .subject-item { padding:8px 10px; }
-    }
-
     .msgbox { margin-top:12px; }
-
-    .hint { font-size:0.9rem; color:var(--muted); margin-top:8px; }
 
     .disclaimer {
       margin-top:16px;
@@ -117,6 +122,11 @@
       text-align:center;
       color:#f1f5f9;
       font-size: 0.95rem;
+    }
+
+    @media (max-width:600px){
+      .kpi .kpi-value { font-size:1.2rem; }
+      .subject-item { padding:8px 10px; }
     }
   </style>
 </head>
@@ -140,7 +150,7 @@
     <div id="results" class="mt-3"></div>
 
     <div class="disclaimer">
-      <strong>Disclaimer:</strong> This interface provides a quick lookup from the available result data files. While we strive for accuracy, this page is for informational purposes only — for the official, final result please consult your department tutor or the college examination office.
+      <strong>Disclaimer:</strong> This interface provides a quick lookup from the available result data files. While we strive for accuracy, this page is for informational purposes only — for the official, final result please consult your department tutor or authorised person.
     </div>
   </div>
 
@@ -171,6 +181,11 @@ function toTwoDecimals(val){
   return n.toFixed(2);
 }
 
+function isLabName(name){
+  if(!name) return false;
+  return /lab/i.test(name); // simple detection: contains "lab"
+}
+
 async function renderResult(regRaw){
   results.innerHTML = ''; msg.innerHTML = '';
   const reg = String(regRaw || '').trim().toUpperCase();
@@ -198,63 +213,64 @@ async function renderResult(regRaw){
       return;
     }
 
-    // Use first matched row
     const r = rows[0];
 
-    // show branch note if found elsewhere
     if(r["__branch__"]){
-      msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${r["__branch__"]}</strong>.</div>`;
+      msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${escapeHtml(r["__branch__"])}</strong>.</div>`;
     }
 
-    // Header
     const studentName = safeText(r["Name"] || '');
     const regNo = safeText(r["Reg. No"] || reg);
     const uniroll = safeText(r["Uni-Roll No"] || '');
     const colroll = safeText(r["Col Roll No"] || '');
 
-    // Collect subject keys (exclude core keys and internal)
+    // prepare subjects
     const skip = new Set(["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","__branch__"]);
     const subjectKeys = Object.keys(r).filter(k => !skip.has(k));
-
-    // Map subject keys to {name, grade}. Keys are like "Database... (4CS4-05)" or plain code.
     const subjects = subjectKeys.map(k=>{
-      const grade = r[k];
-      const name = String(k).split(" (")[0]; // drop code in paren
-      return { name: name, grade: grade };
+      return { rawKey: k, name: String(k).split(" (")[0], grade: r[k] };
     });
 
-    // sort subjects for better readability: put labs after theory? or just alphabetical
-    // We'll sort alphabetically by name for predictability.
-    subjects.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+    // split into theory vs labs
+    const theory = subjects.filter(s => !isLabName(s.name));
+    const labs = subjects.filter(s => isLabName(s.name));
 
-    // Build HTML
+    // sort each group alphabetically
+    theory.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+    labs.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+
     let html = `<h3 style="margin-top:8px; margin-bottom:6px; font-weight:800;">${escapeHtml(studentName)} <small style="color:var(--muted); font-weight:600;">(${escapeHtml(regNo)})</small></h3>`;
     html += `<div style="color:var(--muted); margin-bottom:10px;">Uni-Roll: ${escapeHtml(uniroll)} · Col Roll: ${escapeHtml(colroll)}</div>`;
 
-    // subjects grid
-    html += `<div class="subjects-grid">`;
-    for(const s of subjects){
-      const cls = gradeBucket(s.grade);
-      // show subject name (left) — and short grade pill (right)
-      html += `<div class="subject-item">` +
-                `<div class="subject-name">${escapeHtml(s.name)}</div>` +
-                `<div class="subject-grade ${cls}">${escapeHtml(s.grade)}</div>` +
-              `</div>`;
+    // THEORY group
+    if(theory.length){
+      html += `<div class="group-head">THEORY <small>(${theory.length})</small></div>`;
+      html += `<div class="subjects-grid">`;
+      for(const s of theory){
+        const cls = gradeBucket(s.grade);
+        html += `<div class="subject-item"><div class="subject-name">${escapeHtml(s.name)}</div><div class="subject-grade ${cls}">${escapeHtml(s.grade)}</div></div>`;
+      }
+      html += `</div>`;
     }
-    html += `</div>`;
 
-    // Summary: SGPA two decimals, Total Back, Result badge
-    const rawSgpa = r["SGPA"];
-    const sgpaStr = toTwoDecimals(rawSgpa);
+    // PRACTICAL / SESSIONAL group
+    if(labs.length){
+      html += `<div class="group-head">PRACTICAL &amp; SESSIONAL <small>(${labs.length})</small></div>`;
+      html += `<div class="subjects-grid">`;
+      for(const s of labs){
+        const cls = gradeBucket(s.grade);
+        html += `<div class="subject-item"><div class="subject-name">${escapeHtml(s.name)}</div><div class="subject-grade ${cls}">${escapeHtml(s.grade)}</div></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Summary
+    const sgpaStr = toTwoDecimals(r["SGPA"]);
     const totalBack = escapeHtml(r["Total Back"] || '');
     const resultStatus = String(r["Result"] || '');
     const isPass = resultStatus.toLowerCase().includes('pass');
 
-    html += `<div class="summary-row">` +
-              `<div class="kpi"><div class="kpi-title">SGPA</div><div class="kpi-value">${escapeHtml(sgpaStr)}</div></div>` +
-              `<div class="kpi"><div class="kpi-title">Total Back</div><div class="kpi-small">${escapeHtml(totalBack)}</div></div>` +
-              `<div style="margin-left:auto;"><div class="${isPass ? 'badge-pass' : 'badge-fail'}">${escapeHtml(resultStatus || 'N/A')}</div></div>` +
-            `</div>`;
+    html += `<div class="summary-row"><div class="kpi"><div class="kpi-title">SGPA</div><div class="kpi-value">${escapeHtml(sgpaStr)}</div></div><div class="kpi"><div class="kpi-title">Total Back</div><div class="kpi-small">${escapeHtml(totalBack)}</div></div><div style="margin-left:auto;"><div class="${isPass ? 'badge-pass' : 'badge-fail'}">${escapeHtml(resultStatus || 'N/A')}</div></div></div>`;
 
     results.innerHTML = html;
 
@@ -266,7 +282,6 @@ async function renderResult(regRaw){
   }
 }
 
-// helpers
 function escapeHtml(s){
   if(s === null || s === undefined) return '';
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -275,7 +290,6 @@ function escapeHtml(s){
 // click and Enter handling
 btn.addEventListener('click', ()=> renderResult(regInput.value));
 regInput.addEventListener('keydown', (ev)=> { if(ev.key === 'Enter') renderResult(regInput.value); });
-
 </script>
 </body>
 </html>
