@@ -14,9 +14,7 @@
       --muted: #6b7280;
     }
 
-    html,body {
-      height: 100%;
-    }
+    html,body { height:100%; }
     body {
       margin: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -27,13 +25,12 @@
       color: #0f172a;
     }
 
-    /* main container holds the card and grows */
     .main {
       flex: 1 0 auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 32px;
+      padding: 28px;
     }
 
     .card-outer {
@@ -41,7 +38,7 @@
       max-width: 1100px;
       background: var(--card-bg);
       border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.22);
       padding: 22px;
       position: relative;
     }
@@ -54,10 +51,8 @@
     }
     .subtitle { color: var(--muted); margin-bottom: 14px; }
 
-    /* form area */
     .form-row { margin-bottom: 12px; }
 
-    /* group heading */
     .group-head {
       margin-top: 18px;
       margin-bottom: 8px;
@@ -69,7 +64,6 @@
     }
     .group-head small { color: var(--muted); font-weight:600; }
 
-    /* grid */
     .subjects-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -79,9 +73,9 @@
 
     .subject-item {
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border-radius: 12px;
       background: #fff;
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
@@ -91,16 +85,19 @@
     }
 
     .subject-name {
-      /* allow wrapping and long names */
-      white-space: normal;
+      /* allow full wrapping */
+      white-space: normal !important;
       word-break: break-word;
+      overflow: visible;
       margin-right: 12px;
       font-size: 0.95rem;
       line-height: 1.2;
       flex: 1 1 auto;
+      text-align: left;
     }
 
     .subject-grade {
+      flex-shrink: 0;
       min-width: 56px;
       padding: 6px 10px;
       text-align: center;
@@ -108,16 +105,13 @@
       font-weight: 800;
       color: #fff;
       margin-left: 8px;
-      flex: 0 0 auto;
     }
 
-    /* grade colors */
-    .g-A { background: #16a34a; }    /* A family */
-    .g-B { background: #2563eb; }    /* B */
+    .g-A { background: #16a34a; }     /* A family */
+    .g-B { background: #2563eb; }     /* B family */
     .g-C { background: #f59e0b; color: #111; } /* C/D */
-    .g-F { background: #dc2626; }    /* Fail */
+    .g-F { background: #dc2626; }     /* Fail */
 
-    /* summary */
     .summary-row {
       display:flex;
       gap:16px;
@@ -137,8 +131,16 @@
 
     .msgbox { margin-top: 12px; }
 
-    .disclaimer {
+    .developed-by {
       margin-top: 16px;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .disclaimer {
+      margin-top: 10px;
       font-size: 0.95rem;
       color: #374151;
       background: rgba(249,250,251,0.7);
@@ -147,29 +149,14 @@
       border-radius: 8px;
     }
 
-    /* footer fixed at bottom but not overlap card on small screens */
     footer.site-footer {
-      background: transparent;
-      color: #f1f5f9;
-      padding: 14px 18px;
-      text-align: center;
-      flex-shrink: 0;
+      display:none; /* keep page tidy; Developed by moved above disclaimer */
     }
 
-    /* on larger screens show footer at right bottom inside page */
-    @media(min-width: 900px){
-      footer.site-footer {
-        position: fixed;
-        right: 28px;
-        bottom: 18px;
-        text-align: right;
-        width: auto;
-      }
+    @media (max-width:600px){
+      .kpi .kpi-value { font-size: 1.2rem; }
+      .subject-item { padding: 10px; }
     }
-
-    /* make sure long strings don't overflow */
-    code, pre { white-space: normal; word-break: break-word; }
-
   </style>
 </head>
 <body>
@@ -192,15 +179,16 @@
       <div id="msg" class="msgbox" aria-live="polite"></div>
       <div id="results" class="mt-3" role="region" aria-live="polite"></div>
 
-      <div class="disclaimer">
-        <strong>Disclaimer:</strong> This interface provides a quick lookup from the available result data files. While we strive for accuracy, this page is for informational purposes only — for the official, final result please consult your department tutor or the college examination office.
+      <!-- Developed by above disclaimer as requested -->
+      <div id="developed" class="developed-by" aria-hidden="false">
+        Developed by <strong>Department of AI &amp; DS, PIET Jaipur</strong>
+      </div>
+
+      <div class="disclaimer" id="disclaimer">
+        <strong>Disclaimer:</strong> This interface provides a quick lookup from the available result data files. While we strive for accuracy, this page is for informational purposes only — for the official, final result please consult your department tutor or authorised person.
       </div>
     </div>
   </div>
-
-  <footer class="site-footer">
-    Developed by <strong>Department of AI &amp; DS, PIET Jaipur</strong>
-  </footer>
 
 <script>
 /* UI logic — works with /api/result?reg=... */
@@ -225,7 +213,7 @@ function toTwoDecimals(val){
   return n.toFixed(2);
 }
 function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function isLabName(name){ if(!name) return false; return /lab/i.test(name); }
+function isLabName(name){ if(!name) return false; return /lab|practical|sessional/i.test(name); }
 
 async function renderResult(regRaw){
   results.innerHTML = '';
@@ -257,7 +245,7 @@ async function renderResult(regRaw){
 
     const r = rows[0];
 
-    // branch note
+    // show branch note if present
     if(r["Branch"]){
       msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${escapeHtml(r["Branch"])}</strong>.</div>`;
     }
@@ -265,26 +253,23 @@ async function renderResult(regRaw){
     const studentName = safeText(r["Name"] || '');
     const regNo = safeText(r["Reg. No"] || reg);
     const uniroll = safeText(r["Uni-Roll No"] || '');
-    const colroll = safeText(r["Col Roll No"] || '');
 
-    // prepare subject keys (ignore core fields)
+    // prepare subject keys (ignore core + Branch + skip numeric suffix columns)
     const skip = new Set(["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","Branch"]);
-    const subjectKeys = Object.keys(r).filter(k => !skip.has(k));
-    const subjects = subjectKeys.map(k => {
-      return { key: k, name: String(k).split(" (")[0], grade: r[k] };
-    });
+    const subjectKeys = Object.keys(r)
+      .filter(k => !skip.has(k))
+      .filter(k => !/\.\d+$/.test(k));   // skip keys that end with .1, .2 etc.
 
-    // group into theory and labs
+    const subjects = subjectKeys.map(k => ({ key: k, name: String(k).split(" (")[0], grade: r[k] }));
+
     const theory = subjects.filter(s => !isLabName(s.name));
     const labs = subjects.filter(s => isLabName(s.name));
 
-    // sort alphabetically for readability
     theory.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
     labs.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
 
-    // Build HTML
     let html = `<h3 style="margin-top:8px; margin-bottom:6px; font-weight:800;">${escapeHtml(studentName)} <small style="color:${escapeHtml('#6b7280')}; font-weight:600;">(${escapeHtml(regNo)})</small></h3>`;
-    html += `<div style="color:${escapeHtml('#6b7280')}; margin-bottom:10px;">Uni-Roll: ${escapeHtml(uniroll)} · Col Roll: ${escapeHtml(colroll)}</div>`;
+    html += `<div style="color:${escapeHtml('#6b7280')}; margin-bottom:10px;">Uni-Roll: ${escapeHtml(uniroll)}</div>`;
 
     if(theory.length){
       html += `<div class="group-head">THEORY <small>(${theory.length})</small></div>`;
@@ -306,7 +291,7 @@ async function renderResult(regRaw){
       html += `</div>`;
     }
 
-    // summary
+    // summary: SGPA two decimals, Total Back, Result
     const sgpaStr = toTwoDecimals(r["SGPA"]);
     const totalBack = escapeHtml(r["Total Back"] || '');
     const resultStatus = String(r["Result"] || '');
@@ -325,8 +310,13 @@ async function renderResult(regRaw){
 }
 
 btn.addEventListener('click', ()=> renderResult(regInput.value));
-regInput.addEventListener('keydown', (ev)=> { if(ev.key === 'Enter') renderResult(regInput.value); });
-
+regInput.addEventListener('keydown', (ev)=> {
+  if(ev.key === 'Enter') {
+    // ensure uppercase conversion visually for clarity, then search
+    regInput.value = (regInput.value || '').toUpperCase();
+    renderResult(regInput.value);
+  }
+});
 </script>
 </body>
 </html>
