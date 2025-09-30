@@ -39,7 +39,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       font-size: 0.9rem;
     }
-    .grade-A, .grade-Ap, .grade-App { background:#16a34a; } /* Greens */
+    .grade-A, .grade-Ap, .grade-App { background:#16a34a; }
     .grade-B { background:#2563eb; }
     .grade-C, .grade-D { background:#f59e0b; }
     .grade-F { background:#dc2626; }
@@ -66,12 +66,12 @@
     <div class="row g-2 align-items-end mt-2">
       <div class="col-md-6">
         <label class="form-label">Registration Number</label>
-        <input id="reg" class="form-control" placeholder="PIET23AD001" value="PIET23CS001">
+        <!-- Default Reg No set to PIET23AD001 -->
+        <input id="reg" class="form-control" placeholder="PIET23AD001" value="PIET23AD001">
       </div>
       <div class="col-md-3">
         <label class="form-label">Branch</label>
         <select id="branch" class="form-select">
-          <!-- Ordered list of branches -->
           <option value="AI&DS-E">AI&DS-E</option>
           <option value="CS(AI)-F">CS(AI)-F</option>
           <option value="CS(DS)-G">CS(DS)-G</option>
@@ -119,8 +119,9 @@ btn.addEventListener('click', async ()=>{
     const data = await resp.json();
     if(resp.status===200){
       const rows = data.result || [];
-      if(rows.length===0){ results.innerHTML='<div class="alert alert-info">No record found</div>'; }
-      else{
+      if(rows.length===0){
+        results.innerHTML='<div class="alert alert-danger">⚠️ Record not found for entered registration and branch.</div>';
+      } else {
         const r = rows[0];
         let html = `<h5 class="mt-3">${r["Name"]} <small class="text-muted">(${r["Reg. No"]})</small></h5>`;
         html += `<div class="text-muted mb-2">Uni-Roll: ${r["Uni-Roll No"]||""} · Col Roll: ${r["Col Roll No"]||""}</div>`;
@@ -128,12 +129,12 @@ btn.addEventListener('click', async ()=>{
         Object.keys(r).forEach(k=>{
           if(!["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA"].includes(k)){
             const g = r[k];
-            let subjectName = k.split(" (")[0];  // drop code for pills
+            let subjectName = k.split(" (")[0];  
             html += `<span class="subject-pill ${gradeClass(g)}">${subjectName} — ${g}</span>`;
           }
         });
         html += `</div>`;
-        // Summary
+        // Summary with Pass/Fail badge
         const resultStatus = r["Result"]||"";
         let badge = resultStatus.toLowerCase().includes("pass") 
             ? `<span class="badge bg-success">${resultStatus}</span>` 
