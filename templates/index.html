@@ -16,10 +16,10 @@
       color: #222;
     }
     .card {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.98);
       border-radius: 16px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-      max-width: 900px;
+      max-width: 980px;
       width: 100%;
     }
     h4 {
@@ -36,42 +36,47 @@
       border-radius:20px;
       font-weight:600;
       color:#fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      font-size: 0.9rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      font-size: 0.92rem;
     }
-    .grade-A, .grade-Ap, .grade-App { background:#16a34a; }
+    .grade-A, .grade-Ap, .grade-App { background:#16a34a; } /* Greens */
     .grade-B { background:#2563eb; }
-    .grade-C, .grade-D { background:#f59e0b; }
+    .grade-C, .grade-D { background:#f59e0b; color:#111; }
     .grade-F { background:#dc2626; }
     .summary {
       margin-top:12px;
       font-weight:600;
       padding:10px;
-      background:#f1f5f9;
+      background:#f8fafc;
       border-radius:8px;
       font-size:1rem;
     }
     .footer {
-      margin-top: 20px;
+      margin-top: 16px;
       text-align:center;
       color:#f1f5f9;
       font-size: 0.9rem;
     }
+    .hint { font-size:0.9rem; color:#555; }
   </style>
 </head>
 <body>
-<div class="container">
+<div class="container py-4">
   <div class="card p-4">
     <h4>PIET — Result Lookup</h4>
-    <div class="row g-2 align-items-end mt-2">
+
+    <div class="row g-2 align-items-end mt-3">
       <div class="col-md-6">
         <label class="form-label">Registration Number</label>
-        <!-- Default Reg No set to PIET23AD001 -->
-        <input id="reg" class="form-control" placeholder="PIET23AD001" value="PIET23AD001">
+        <!-- blank by default; tooltip instructs user -->
+        <input id="reg" class="form-control" placeholder="Enter registration number (e.g. PIET23AD005)" title="Type registration number. Case doesn't matter; it will be converted to UPPERCASE." autofocus>
+        <div class="hint mt-1">Tip: You can type in lowercase — we'll convert it. Example formats: <code>piet23ad005</code>, <code>PIET23CS001</code>.</div>
       </div>
+
       <div class="col-md-3">
         <label class="form-label">Branch</label>
-        <select id="branch" class="form-select">
+        <select id="branch" class="form-select" title="Select the student's branch">
+          <!-- Requested order -->
           <option value="AI&DS-E">AI&DS-E</option>
           <option value="CS(AI)-F">CS(AI)-F</option>
           <option value="CS(DS)-G">CS(DS)-G</option>
@@ -80,17 +85,25 @@
           <option value="CS(IOT)-H">CS(IOT)-H</option>
         </select>
       </div>
+
       <div class="col-md-3">
         <button id="btn" class="btn btn-primary w-100">Get Result</button>
       </div>
     </div>
+
     <div id="msg" class="mt-3"></div>
     <div id="results" class="mt-3"></div>
+
+    <div class="mt-3">
+      <small class="text-muted">If record is found in a different branch file, we will return it and display the actual branch.</small>
+    </div>
   </div>
-  <div class="footer">
+
+  <div class="footer mt-3">
     Developed by Department of AI &amp; DS, PIET Jaipur
   </div>
 </div>
+
 <script>
 const btn = document.getElementById('btn');
 const regInput = document.getElementById('reg');
@@ -99,7 +112,7 @@ const results = document.getElementById('results');
 const msg = document.getElementById('msg');
 
 function gradeClass(g){
-  g = (g||'').toUpperCase();
+  g = (g||'').toString().toUpperCase();
   if(g==='A++'||g==='A+') return 'grade-App';
   if(g.startsWith('A')) return 'grade-A';
   if(g.startsWith('B')) return 'grade-B';
@@ -108,47 +121,90 @@ function gradeClass(g){
   return 'grade-B';
 }
 
+function escapeHtml(s){
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
 btn.addEventListener('click', async ()=>{
-  results.innerHTML=''; msg.innerHTML='';
-  const reg = regInput.value.trim(); const branch = branchSelect.value;
-  if(!reg){ msg.innerHTML='<div class="alert alert-warning">Enter registration number</div>'; return; }
-  btn.disabled=true; btn.innerText='Searching...';
+  results.innerHTML = '';
+  msg.innerHTML = '';
+
+  // convert to uppercase before sending
+  const rawReg = regInput.value.trim();
+  if(!rawReg){
+    msg.innerHTML = '<div class="alert alert-warning">Enter registration number.</div>';
+    return;
+  }
+  const reg = rawReg.toUpperCase();
+  const branch = branchSelect.value;
+
+  btn.disabled = true;
+  btn.innerText = 'Searching...';
+
   try{
     const qs = new URLSearchParams({reg, branch});
     const resp = await fetch('/api/result?'+qs.toString());
-    const data = await resp.json();
-    if(resp.status===200){
+    let data;
+    try { data = await resp.json(); }
+    catch(e){
+      msg.innerHTML = '<div class="alert alert-danger">Server returned an invalid response.</div>';
+      return;
+    }
+
+    if(resp.status === 200){
       const rows = data.result || [];
-      if(rows.length===0){
-        results.innerHTML='<div class="alert alert-danger">⚠️ Record not found for entered registration and branch.</div>';
+      if(rows.length === 0){
+        results.innerHTML = '<div class="alert alert-danger">⚠️ Record not found for that registration and branch.</div>';
       } else {
+        // pick first match (usually a single row)
         const r = rows[0];
-        let html = `<h5 class="mt-3">${r["Name"]} <small class="text-muted">(${r["Reg. No"]})</small></h5>`;
-        html += `<div class="text-muted mb-2">Uni-Roll: ${r["Uni-Roll No"]||""} · Col Roll: ${r["Col Roll No"]||""}</div>`;
+        // show branch-note when record found in different branch
+        if(r["__branch__"] && r["__branch__"] !== branch){
+          msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${escapeHtml(r["__branch__"])}</strong> (not the selected <strong>${escapeHtml(branch)}</strong>).</div>`;
+        }
+
+        let html = `<h5 class="mt-3">${escapeHtml(r["Name"]||'')} <small class="text-muted">(${escapeHtml(r["Reg. No"]||reg)})</small></h5>`;
+        html += `<div class="text-muted mb-2">Uni-Roll: ${escapeHtml(r["Uni-Roll No"]||'')} · Col Roll: ${escapeHtml(r["Col Roll No"]||'')}</div>`;
+
+        // subjects pills
         html += `<div class="mb-3">`;
         Object.keys(r).forEach(k=>{
-          if(!["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA"].includes(k)){
+          if(!["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","__branch__"].includes(k)){
             const g = r[k];
-            let subjectName = k.split(" (")[0];  
-            html += `<span class="subject-pill ${gradeClass(g)}">${subjectName} — ${g}</span>`;
+            const subjectName = k.split(" (")[0]; // remove code in parentheses
+            html += `<span class="subject-pill ${gradeClass(g)}">${escapeHtml(subjectName)} — ${escapeHtml(g)}</span>`;
           }
         });
         html += `</div>`;
-        // Summary with Pass/Fail badge
-        const resultStatus = r["Result"]||"";
-        let badge = resultStatus.toLowerCase().includes("pass") 
-            ? `<span class="badge bg-success">${resultStatus}</span>` 
-            : `<span class="badge bg-danger">${resultStatus}</span>`;
-        html += `<div class="summary">SGPA: ${r["SGPA"]||""} · Total Back: ${r["Total Back"]||""} · Result: ${badge}</div>`;
+
+        // summary with badge
+        const resultStatus = (r["Result"] || '').toString();
+        const totalBack = escapeHtml(r["Total Back"] || '');
+        const sgpa = escapeHtml(r["SGPA"] || '');
+        const badge = resultStatus.toLowerCase().includes('pass')
+          ? `<span class="badge bg-success">${escapeHtml(resultStatus)}</span>`
+          : `<span class="badge bg-danger">${escapeHtml(resultStatus)}</span>`;
+
+        html += `<div class="summary">SGPA: ${sgpa} · Total Back: ${totalBack} · Result: ${badge}</div>`;
+
         results.innerHTML = html;
       }
     } else {
-      msg.innerHTML = '<div class="alert alert-danger">'+(data.error||'Request failed')+'</div>';
+      msg.innerHTML = `<div class="alert alert-danger">${escapeHtml(data.error || 'Request failed')}</div>`;
     }
-  }catch(err){
-    msg.innerHTML = '<div class="alert alert-danger">'+err.message+'</div>';
+  } catch(err){
+    msg.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
   } finally {
-    btn.disabled=false; btn.innerText='Get Result';
+    btn.disabled = false;
+    btn.innerText = 'Get Result';
+  }
+});
+
+// allow Enter key to trigger search
+regInput.addEventListener('keydown', (ev) => {
+  if(ev.key === 'Enter') {
+    btn.click();
   }
 });
 </script>
