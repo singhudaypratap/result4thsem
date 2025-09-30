@@ -6,207 +6,276 @@
   <title>PIET — Result Lookup</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    :root{
+      --accent1:#4f46e5;
+      --accent2:#9333ea;
+      --card-bg: rgba(255,255,255,0.98);
+      --muted:#6b7280;
+      --pill-gap:10px;
+    }
     body {
-      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      color: #222;
+      color: #111827;
+      padding: 36px 12px;
     }
     .card {
-      background: rgba(255, 255, 255, 0.98);
+      background: var(--card-bg);
       border-radius: 16px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
       max-width: 980px;
       width: 100%;
+      padding: 22px;
     }
     h4 {
-      font-weight: 700;
-      color: #4f46e5;
-      border-bottom: 3px solid #9333ea;
-      display: inline-block;
-      padding-bottom: 4px;
+      font-weight: 800;
+      color: var(--accent1);
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
     }
-    .subject-pill {
-      display:inline-block;
-      margin:4px;
-      padding:6px 12px;
-      border-radius:20px;
-      font-weight:600;
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    /* Subjects grid */
+    .subjects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .subject-item {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 14px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      font-weight:700;
       color:#fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
-      font-size: 0.92rem;
+      overflow:hidden;
     }
-    .grade-A, .grade-Ap, .grade-App { background:#16a34a; } /* Greens */
-    .grade-B { background:#2563eb; }
-    .grade-C, .grade-D { background:#f59e0b; color:#111; }
-    .grade-F { background:#dc2626; }
-    .summary {
-      margin-top:12px;
-      font-weight:600;
-      padding:10px;
+    .subject-name { flex:1; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; font-size: 0.95rem; }
+    .subject-grade {
+      margin-left: 12px; min-width:64px; text-align:center; border-radius:10px; padding:6px 10px; font-weight:800;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+      color:#fff;
+    }
+    /* grade colors */
+    .g-A { background:#16a34a; }    /* A, A+, A++ */
+    .g-B { background:#2563eb; }    /* B family */
+    .g-C { background:#f59e0b; color:#111 } /* C / D */
+    .g-F { background:#dc2626; }    /* Fail */
+    /* summary */
+    .summary-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      margin-top:16px;
       background:#f8fafc;
-      border-radius:8px;
-      font-size:1rem;
+      padding:14px;
+      border-radius:10px;
+      align-items:center;
     }
+    .kpi { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+    .kpi .kpi-title { font-size:0.85rem; color:var(--muted); }
+    .kpi .kpi-value { font-size:1.6rem; font-weight:800; color:#111; }
+    .kpi-small { font-size:1.05rem; font-weight:700; color:#111; }
+    .badge-pass { background:#16a34a; color:#fff; padding:6px 10px; border-radius:8px; font-weight:800; }
+    .badge-fail { background:#dc2626; color:#fff; padding:6px 10px; border-radius:8px; font-weight:800; }
+
+    /* responsive tweaks */
+    @media (max-width:600px){
+      .kpi .kpi-value { font-size:1.2rem; }
+      .subject-item { padding:8px 10px; }
+    }
+
+    .msgbox { margin-top:12px; }
+
+    .hint { font-size:0.9rem; color:var(--muted); margin-top:8px; }
+
+    .disclaimer {
+      margin-top:16px;
+      font-size:0.9rem;
+      color:#374151;
+      background: rgba(249,250,251,0.6);
+      border-left: 4px solid #eab308;
+      padding:10px 12px;
+      border-radius:8px;
+    }
+
     .footer {
-      margin-top: 16px;
+      margin-top:20px;
       text-align:center;
       color:#f1f5f9;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
     }
-    .hint { font-size:0.9rem; color:#555; }
   </style>
 </head>
 <body>
-<div class="container py-4">
-  <div class="card p-4">
+  <div class="card">
     <h4>PIET — Result Lookup</h4>
+    <div class="subtitle">Enter registration number below (case-insensitive). We will search all branches and return the best match.</div>
 
-    <div class="row g-2 align-items-end mt-3">
-      <div class="col-md-6">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-9 col-12 mb-2">
         <label class="form-label">Registration Number</label>
-        <!-- blank by default; tooltip instructs user -->
-        <input id="reg" class="form-control" placeholder="Enter registration number (e.g. PIET23AD005)" title="Type registration number. Case doesn't matter; it will be converted to UPPERCASE." autofocus>
-        <div class="hint mt-1">Tip: You can type in lowercase — we'll convert it. Example formats: <code>piet23ad005</code>, <code>PIET23CS001</code>.</div>
+        <input id="reg" class="form-control" placeholder="Enter registration number (e.g. piet23ad005)" title="Type registration number. Case doesn't matter; it will be converted to UPPERCASE." autofocus>
+        <div class="hint">Tip: type in lowercase or uppercase — we'll convert automatically. Press Enter to search.</div>
       </div>
-
-      <div class="col-md-3">
-        <label class="form-label">Branch</label>
-        <select id="branch" class="form-select" title="Select the student's branch">
-          <!-- Requested order -->
-          <option value="AI&DS-E">AI&DS-E</option>
-          <option value="CS(AI)-F">CS(AI)-F</option>
-          <option value="CS(DS)-G">CS(DS)-G</option>
-          <option value="CS">CS</option>
-          <option value="CSR-D">CSR-D</option>
-          <option value="CS(IOT)-H">CS(IOT)-H</option>
-        </select>
-      </div>
-
-      <div class="col-md-3">
+      <div class="col-md-3 col-12 mb-2">
         <button id="btn" class="btn btn-primary w-100">Get Result</button>
       </div>
     </div>
 
-    <div id="msg" class="mt-3"></div>
+    <div id="msg" class="msgbox"></div>
     <div id="results" class="mt-3"></div>
 
-    <div class="mt-3">
-      <small class="text-muted">If record is found in a different branch file, we will return it and display the actual branch.</small>
+    <div class="disclaimer">
+      <strong>Disclaimer:</strong> This interface provides a quick lookup from the available result data files. While we strive for accuracy, this page is for informational purposes only — for the official, final result please consult your department tutor or the college examination office.
     </div>
   </div>
 
   <div class="footer mt-3">
     Developed by Department of AI &amp; DS, PIET Jaipur
   </div>
-</div>
 
 <script>
+/* Helper & UI logic */
 const btn = document.getElementById('btn');
 const regInput = document.getElementById('reg');
-const branchSelect = document.getElementById('branch');
 const results = document.getElementById('results');
 const msg = document.getElementById('msg');
 
-function gradeClass(g){
-  g = (g||'').toString().toUpperCase();
-  if(g==='A++'||g==='A+') return 'grade-App';
-  if(g.startsWith('A')) return 'grade-A';
-  if(g.startsWith('B')) return 'grade-B';
-  if(g.startsWith('C')||g.startsWith('D')) return 'grade-C';
-  if(g==='F'||g.includes('FAIL')) return 'grade-F';
-  return 'grade-B';
+function gradeBucket(g){
+  if(!g && g!==0) return 'g-B';
+  const s = String(g).toUpperCase().trim();
+  if(s === 'A++' || s === 'A+' || s.startsWith('A')) return 'g-A';
+  if(s.startsWith('B')) return 'g-B';
+  if(s.startsWith('C') || s.startsWith('D')) return 'g-C';
+  if(s === 'F' || s.includes('FAIL')) return 'g-F';
+  return 'g-B';
+}
+function safeText(s){ return (s===null||s===undefined) ? '' : String(s); }
+function toTwoDecimals(val){
+  const n = parseFloat(String(val).replace(/[^0-9.\-]/g,'')); // strip weird chars
+  if(isNaN(n)) return safeText(val);
+  return n.toFixed(2);
 }
 
-function escapeHtml(s){
-  if(s === null || s === undefined) return '';
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-btn.addEventListener('click', async ()=>{
-  results.innerHTML = '';
-  msg.innerHTML = '';
-
-  // convert to uppercase before sending
-  const rawReg = regInput.value.trim();
-  if(!rawReg){
+async function renderResult(regRaw){
+  results.innerHTML = ''; msg.innerHTML = '';
+  const reg = String(regRaw || '').trim().toUpperCase();
+  if(!reg){
     msg.innerHTML = '<div class="alert alert-warning">Enter registration number.</div>';
     return;
   }
-  const reg = rawReg.toUpperCase();
-  const branch = branchSelect.value;
 
   btn.disabled = true;
   btn.innerText = 'Searching...';
 
   try{
-    const qs = new URLSearchParams({reg, branch});
-    const resp = await fetch('/api/result?'+qs.toString());
+    const resp = await fetch('/api/result?'+new URLSearchParams({reg}));
     let data;
-    try { data = await resp.json(); }
-    catch(e){
-      msg.innerHTML = '<div class="alert alert-danger">Server returned an invalid response.</div>';
+    try { data = await resp.json(); } catch(e){ msg.innerHTML = '<div class="alert alert-danger">Server returned invalid JSON.</div>'; return; }
+
+    if(resp.status !== 200){
+      msg.innerHTML = `<div class="alert alert-danger">${data.error || 'Request failed'}</div>`;
       return;
     }
 
-    if(resp.status === 200){
-      const rows = data.result || [];
-      if(rows.length === 0){
-        results.innerHTML = '<div class="alert alert-danger">⚠️ Record not found for that registration and branch.</div>';
-      } else {
-        // pick first match (usually a single row)
-        const r = rows[0];
-        // show branch-note when record found in different branch
-        if(r["__branch__"] && r["__branch__"] !== branch){
-          msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${escapeHtml(r["__branch__"])}</strong> (not the selected <strong>${escapeHtml(branch)}</strong>).</div>`;
-        }
-
-        let html = `<h5 class="mt-3">${escapeHtml(r["Name"]||'')} <small class="text-muted">(${escapeHtml(r["Reg. No"]||reg)})</small></h5>`;
-        html += `<div class="text-muted mb-2">Uni-Roll: ${escapeHtml(r["Uni-Roll No"]||'')} · Col Roll: ${escapeHtml(r["Col Roll No"]||'')}</div>`;
-
-        // subjects pills
-        html += `<div class="mb-3">`;
-        Object.keys(r).forEach(k=>{
-          if(!["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","__branch__"].includes(k)){
-            const g = r[k];
-            const subjectName = k.split(" (")[0]; // remove code in parentheses
-            html += `<span class="subject-pill ${gradeClass(g)}">${escapeHtml(subjectName)} — ${escapeHtml(g)}</span>`;
-          }
-        });
-        html += `</div>`;
-
-        // summary with badge
-        const resultStatus = (r["Result"] || '').toString();
-        const totalBack = escapeHtml(r["Total Back"] || '');
-        const sgpa = escapeHtml(r["SGPA"] || '');
-        const badge = resultStatus.toLowerCase().includes('pass')
-          ? `<span class="badge bg-success">${escapeHtml(resultStatus)}</span>`
-          : `<span class="badge bg-danger">${escapeHtml(resultStatus)}</span>`;
-
-        html += `<div class="summary">SGPA: ${sgpa} · Total Back: ${totalBack} · Result: ${badge}</div>`;
-
-        results.innerHTML = html;
-      }
-    } else {
-      msg.innerHTML = `<div class="alert alert-danger">${escapeHtml(data.error || 'Request failed')}</div>`;
+    const rows = data.result || [];
+    if(rows.length === 0){
+      results.innerHTML = '<div class="alert alert-danger">⚠️ Record not found for that registration.</div>';
+      return;
     }
+
+    // Use first matched row
+    const r = rows[0];
+
+    // show branch note if found elsewhere
+    if(r["__branch__"]){
+      msg.innerHTML = `<div class="alert alert-warning">Note: record found under branch <strong>${r["__branch__"]}</strong>.</div>`;
+    }
+
+    // Header
+    const studentName = safeText(r["Name"] || '');
+    const regNo = safeText(r["Reg. No"] || reg);
+    const uniroll = safeText(r["Uni-Roll No"] || '');
+    const colroll = safeText(r["Col Roll No"] || '');
+
+    // Collect subject keys (exclude core keys and internal)
+    const skip = new Set(["Reg. No","Name","Uni-Roll No","Col Roll No","Total Back","Result","SGPA","__branch__"]);
+    const subjectKeys = Object.keys(r).filter(k => !skip.has(k));
+
+    // Map subject keys to {name, grade}. Keys are like "Database... (4CS4-05)" or plain code.
+    const subjects = subjectKeys.map(k=>{
+      const grade = r[k];
+      const name = String(k).split(" (")[0]; // drop code in paren
+      return { name: name, grade: grade };
+    });
+
+    // sort subjects for better readability: put labs after theory? or just alphabetical
+    // We'll sort alphabetically by name for predictability.
+    subjects.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+
+    // Build HTML
+    let html = `<h3 style="margin-top:8px; margin-bottom:6px; font-weight:800;">${escapeHtml(studentName)} <small style="color:var(--muted); font-weight:600;">(${escapeHtml(regNo)})</small></h3>`;
+    html += `<div style="color:var(--muted); margin-bottom:10px;">Uni-Roll: ${escapeHtml(uniroll)} · Col Roll: ${escapeHtml(colroll)}</div>`;
+
+    // subjects grid
+    html += `<div class="subjects-grid">`;
+    for(const s of subjects){
+      const cls = gradeBucket(s.grade);
+      // show subject name (left) — and short grade pill (right)
+      html += `<div class="subject-item">` +
+                `<div class="subject-name">${escapeHtml(s.name)}</div>` +
+                `<div class="subject-grade ${cls}">${escapeHtml(s.grade)}</div>` +
+              `</div>`;
+    }
+    html += `</div>`;
+
+    // Summary: SGPA two decimals, Total Back, Result badge
+    const rawSgpa = r["SGPA"];
+    const sgpaStr = toTwoDecimals(rawSgpa);
+    const totalBack = escapeHtml(r["Total Back"] || '');
+    const resultStatus = String(r["Result"] || '');
+    const isPass = resultStatus.toLowerCase().includes('pass');
+
+    html += `<div class="summary-row">` +
+              `<div class="kpi"><div class="kpi-title">SGPA</div><div class="kpi-value">${escapeHtml(sgpaStr)}</div></div>` +
+              `<div class="kpi"><div class="kpi-title">Total Back</div><div class="kpi-small">${escapeHtml(totalBack)}</div></div>` +
+              `<div style="margin-left:auto;"><div class="${isPass ? 'badge-pass' : 'badge-fail'}">${escapeHtml(resultStatus || 'N/A')}</div></div>` +
+            `</div>`;
+
+    results.innerHTML = html;
+
   } catch(err){
-    msg.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
+    msg.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message || 'Unknown error')}</div>`;
   } finally {
     btn.disabled = false;
     btn.innerText = 'Get Result';
   }
-});
+}
 
-// allow Enter key to trigger search
-regInput.addEventListener('keydown', (ev) => {
-  if(ev.key === 'Enter') {
-    btn.click();
-  }
-});
+// helpers
+function escapeHtml(s){
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// click and Enter handling
+btn.addEventListener('click', ()=> renderResult(regInput.value));
+regInput.addEventListener('keydown', (ev)=> { if(ev.key === 'Enter') renderResult(regInput.value); });
+
 </script>
 </body>
 </html>
